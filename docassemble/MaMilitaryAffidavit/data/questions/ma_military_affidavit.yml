@@ -1,0 +1,408 @@
+---
+include:
+  - docassemble.AssemblyLine:al_package.yml
+  - docassemble.ALMassachusetts:al_massachusetts.yml
+  - docassemble.MassAccess:massaccess.yml
+---
+metadata:
+  title: |
+    Military Affidavit
+  short title: |
+    Military Affidavit
+  tags:
+    - BE-00-00-00-00
+    - BE-04-00-00-00
+    - ED-00-00-00-00
+    - ES-00-00-00-00
+    - FA-00-00-00-00
+    - FA-07-00-00-00
+    - HE-00-00-00-00
+    - HO-00-00-00-00
+    - IM-00-00-00-00
+    - MO-00-00-00-00
+    - RI-10-00-00-00
+  authors:
+    - Quinten Steenhuis
+---
+mandatory: True
+comment: |
+  This contains metadata that will not be overwritten if this YAML file is included in another
+  file. Each file gets its own key in the interview_metadata dictionary.
+  Most keys are not currently used at runtime, other than "allowed courts".
+code: |
+  interview_metadata
+  if not defined("interview_metadata['ma_military_affidavit']"):
+    interview_metadata.initializeObject("ma_military_affidavit")
+    interview_metadata["ma_military_affidavit"].update({
+      "al_weaver_version": "1.6.1",
+      "generated on": "2022-03-01",
+      "title": "Military Affidavit",
+      "short title": "Military Affidavit",
+      "description": "This form is filed if your opposing party defaults in court.",
+      "original_form": "",
+      "allowed courts": [
+        "Boston Municipal Court",
+        "District Court",
+        "Housing Court",
+        "Juvenile Court",
+        "Land Court",
+        "Probate and Family Court",
+        "Superior Court",
+      ],
+      "categories": [
+        "HE-00-00-00-00",
+        "RI-10-00-00-00",
+        "MO-00-00-00-00",
+        "BE-04-00-00-00",
+        "BE-00-00-00-00",
+        "ED-00-00-00-00",
+        "HO-00-00-00-00",
+        "ES-00-00-00-00",
+        "FA-00-00-00-00",
+        "IM-00-00-00-00",
+        "FA-07-00-00-00",
+      ],        
+      "logic block variable": "interview_order_ma_military_affidavit",
+      "attachment block variable": "ma_military_affidavit_attachment",
+      "typical role": "unknown",
+    })
+---
+code: |
+  interview_metadata['main_interview_key'] =  'ma_military_affidavit'
+---
+code: |
+  # This controls the default country and list of states in address field questions
+  AL_DEFAULT_COUNTRY = "US"
+---
+code: |
+  # This controls the default state in address field questions
+  AL_DEFAULT_STATE = "MA"
+---
+code: |
+  github_repo_name =  'docassemble-MaMilitaryAffidavit'
+---
+code: |
+  interview_short_title = "File a military affidavit if your opponent defaults"
+---
+code: |
+  al_form_type = 'existing_case'
+---
+objects:
+  - other_parties: ALPeopleList.using(there_are_any=True)
+  - users: ALPeopleList.using(there_are_any=True)
+---
+sections:
+  - review_ma_military_affidavit: Review your answers
+---
+#################### Interview order #####################
+comment: |
+  Controls order and branching logic for questions specific to this form
+id: interview_order_ma_military_affidavit
+code: |
+  # Set the allowed courts for this interview
+  allowed_courts = interview_metadata["ma_military_affidavit"]["allowed courts"]
+  nav.set_section('review_ma_military_affidavit')
+  # Below sets the user_role by asking a question.
+  # You can set user_role directly instead to either 'plaintiff' or 'defendant'
+  user_ask_role
+  users.gather()
+  set_parts(subtitle=str(users))
+  plaintiffs.gather()
+  defendants.gather()
+  set_progress(20)
+  is_current_military
+  facts
+  user_is_attorney
+  set_progress(40)
+  trial_court.department
+  trial_court.division
+  docket_number
+  set_progress(60)
+  signature_date
+  interview_order_ma_military_affidavit = True
+---
+###################### Main order ######################
+comment: |
+  This block includes the logic for standalone interviews.
+  Delete mandatory: True to include in another interview
+mandatory: True
+code: |
+  al_intro_screen
+  ma_military_affidavit_intro
+  interview_order_ma_military_affidavit
+  signature_date
+  # Save anonymized interview statistics (customize the saved data below)
+  store_variables_snapshot(data={'zip': users[0].address.zip})
+  ma_military_affidavit_preview_question
+  basic_questions_signature_flow
+  users[0].signature
+  ma_military_affidavit_download
+---
+comment: |
+  This question is used to introduce your interview. Please customize
+id: Military_Affidavit
+continue button field: ma_military_affidavit_intro
+question: |
+  Military Affidavit
+subquestion: |
+  This form takes about 10 minutes to complete. You will be asked to tell the judge what you know about the opposing party and whether they are currently serving in the US military.
+---
+id: Information about military service
+question: |
+  Information about military service
+fields:
+  - "I know opposing party is in the military": is_current_military
+    datatype: yesno
+  - "List of parties serving in the military": current_military_parties
+    input type: area
+    show if: is_current_military
+  - "Opposing party is not in the military": is_not_current_military
+    datatype: yesno
+  - "List of parties not serving in the military": not_current_military_parties
+    input type: area
+  - "There is at least one party who has unknown military status": unknown_current_military
+    datatype: yesno
+  - "List of parties with unknown military status": unknown_current_military_parties
+    input type: area
+---
+id: What facts support your affidavit
+question: |
+  What facts support your affidavit?
+fields:
+  - "The following facts support this affidavit": facts
+    input type: area
+---
+id: Are you an attorney
+question: |
+  Are you an attorney?
+fields:
+  - "I am an attorney": user_is_attorney
+    datatype: yesno
+  - "BBO Number of attorney": bbo_number
+    maxlength: 26
+---
+id: preview ma_military_affidavit
+question: |
+  Preview your form before you sign it
+subquestion: |
+  Here is a preview of the form you will sign on the next page.   
+  
+  ${ al_court_bundle.as_pdf(key='preview') }
+
+  Click the image to open it in a new tab. Click the "Make changes" button
+  to edit your answers.
+
+  ${ action_button_html(url_action('review_ma_military_affidavit'), label='Make changes', color='info') }
+  
+  Remember to come back to this window to continue and sign your form.
+continue button field: ma_military_affidavit_preview_question    
+---
+code: |
+  signature_fields = ['users[0].signature']
+---
+id: ma military affidavit review screen
+event: review_ma_military_affidavit
+question: |
+  Review your answers
+review:
+  - Edit: is_current_military
+    button: |
+      **Opposing party is in the military**:
+      ${ word(yesno(is_current_military)) }
+  - Edit: current_military_parties
+    button: |
+      **List of parties serving in the military**:
+      > ${ single_paragraph(current_military_parties) }
+  - Edit: is_not_current_military
+    button: |
+      **Opposing party is not in the military**:
+      ${ word(yesno(is_not_current_military)) }
+  - Edit: not_current_military_parties
+    button: |
+      **List of parties not serving in the military**:
+      > ${ single_paragraph(not_current_military_parties) }
+  - Edit: unknown_current_military
+    button: |
+      **There is at least one party who has unknown military status**:
+      ${ word(yesno(unknown_current_military)) }
+  - Edit: unknown_current_military_parties
+    button: |
+      **List of parties with unknown military status**:
+      > ${ single_paragraph(unknown_current_military_parties) }
+  - Edit: facts
+    button: |
+      **The following facts support this affidavit**:
+      > ${ single_paragraph(facts) }
+  - Edit: bbo_number
+    button: |
+      **BBO Number of attorney**:
+      ${ bbo_number }
+  - Edit: user_is_attorney
+    button: |
+      **I am an attorney**:
+      ${ word(yesno(user_is_attorney)) }
+  - Edit: trial_court
+    button: |
+      **trial_court**
+
+      % if defined("trial_court.department"):
+      * department: ${ trial_court.department }
+      % endif
+      % if defined("trial_court.division"):
+      * division: ${ trial_court.division }
+      % endif
+  - Edit: plaintiffs.revisit
+    button: |
+      **Plaintiffs**
+
+      % for item in plaintiffs:
+        * ${ item }
+      % endfor
+  - Edit: defendants.revisit
+    button: |
+      **Defendants**
+
+      % for item in defendants:
+        * ${ item }
+      % endfor
+  - Edit: docket_number
+    button: |
+      **docket_number**:
+      ${ docket_number }
+  - Edit: users.revisit
+    button: |
+      **Users**
+
+      % for item in users:
+        * ${ item }
+      % endfor
+  - Edit: signature_date
+    button: |
+      **signature_date**:
+      ${ signature_date }
+---
+continue button field: plaintiffs.revisit
+question: |
+  Edit plaintiffs
+subquestion: |
+  ${ plaintiffs.table }
+
+  ${ plaintiffs.add_action() }
+---
+table: plaintiffs.table
+rows: plaintiffs
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: defendants.revisit
+question: |
+  Edit defendants
+subquestion: |
+  ${ defendants.table }
+
+  ${ defendants.add_action() }
+---
+table: defendants.table
+rows: defendants
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: users.revisit
+question: |
+  Edit users
+subquestion: |
+  ${ users.table }
+
+  ${ users.add_action() }
+---
+table: users.table
+rows: users
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Signature: |
+      row_item.signature if defined("row_item.signature") else ""
+edit:
+  - name.first
+  - signature
+confirm: True
+
+---
+id: download ma_military_affidavit
+event: ma_military_affidavit_download
+question: |
+  Your form is ready to download.
+subquestion: |
+  Thank you ${users}. Your form is ready to download and deliver.
+  
+  View, download and send your form below. Click the "Make changes" button to fix any mistakes.
+
+  ${ action_button_html(url_action('review_ma_military_affidavit'), label='Make changes', color='info') }
+  
+  
+  ${ al_user_bundle.download_list_html() }
+  
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+
+progress: 100
+---
+objects:
+  - ma_military_affidavit_post_interview_instructions: ALDocument.using(title="Instructions", filename="ma_military_affidavit_next_steps.docx", enabled=True, has_addendum=False, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+  - ma_military_affidavit_attachment: ALDocument.using(title="Military Affidavit", filename="ma_military_affidavit.pdf", enabled=True, has_addendum=True, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[ma_military_affidavit_post_interview_instructions,ma_military_affidavit_attachment], filename="ma_military_affidavit.pdf_package.pdf", title="All forms to download for your records", enabled=True)
+  - al_court_bundle: ALDocumentBundle.using(elements=[ma_military_affidavit_attachment], filename="ma_military_affidavit.pdf_package.pdf", title="All forms to download for your records", enabled=True)
+---
+attachments:
+  - name: ma military affidavit post interview instructions
+    filename: Post-interview-instructions     
+    variable name: ma_military_affidavit_post_interview_instructions[i]        
+    skip undefined: True
+    docx template file: ma_military_affidavit_next_steps.docx
+  - name: ma military affidavit attachment
+    filename: ma_military_affidavit.pdf     
+    variable name: ma_military_affidavit_attachment[i]        
+    skip undefined: True
+    pdf template file: ma_military_affidavit.pdf
+    fields:
+      - "trial_court_department": ${ trial_court.department }
+      - "trial_court_division": ${ trial_court.division }
+      - "plaintiffs": ${ plaintiffs }
+      - "defendants": ${ defendants }
+      - "docket_number": ${ docket_number }
+      - "users1_name_full": ${ users[0] }
+      - "users1_name_full__1": ${ users[0] }
+      - "users1_signature": ${ users[0].signature_if_final(i) }
+      - "signature_date": ${ signature_date }
+      - "is_current_military": ${ is_current_military }
+      - "current_military_parties": ${ma_military_affidavit_attachment.safe_value("current_military_parties")}
+      - "is_not_current_military": ${ is_not_current_military }
+      - "not_current_military_parties": ${ma_military_affidavit_attachment.safe_value("not_current_military_parties")}
+      - "unknown_current_military": ${ unknown_current_military }
+      - "unknown_current_military_parties": ${ma_military_affidavit_attachment.safe_value("unknown_current_military_parties")}
+      - "facts": ${ma_military_affidavit_attachment.safe_value("facts")}
+      - "bbo_number": ${ bbo_number }
+      - "user_is_attorney": ${ user_is_attorney }
+---
+code: |
+  ma_military_affidavit_attachment.overflow_fields["current_military_parties"].overflow_trigger = 364
+  ma_military_affidavit_attachment.overflow_fields["current_military_parties"].label = "List of parties serving in the military"
+  ma_military_affidavit_attachment.overflow_fields["not_current_military_parties"].overflow_trigger = 364
+  ma_military_affidavit_attachment.overflow_fields["not_current_military_parties"].label = "List of parties not serving in the military"
+  ma_military_affidavit_attachment.overflow_fields["unknown_current_military_parties"].overflow_trigger = 364
+  ma_military_affidavit_attachment.overflow_fields["unknown_current_military_parties"].label = "List of parties with unknown military status"
+  ma_military_affidavit_attachment.overflow_fields["facts"].overflow_trigger = 658
+  ma_military_affidavit_attachment.overflow_fields["facts"].label = "The following facts support this affidavit"
+  ma_military_affidavit_attachment.overflow_fields.gathered = True
